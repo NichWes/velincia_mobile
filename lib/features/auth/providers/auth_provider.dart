@@ -7,7 +7,8 @@ class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final SecureStorageService _storageService = SecureStorageService();
 
-  bool isLoading = false;
+  bool isCheckingAuth = false;
+  bool isSubmitting = false;
   UserModel? user;
 
   bool get isLoggedIn => user != null;
@@ -17,7 +18,7 @@ class AuthProvider extends ChangeNotifier {
     required String password,
   }) async {
     try {
-      isLoading = true;
+      isSubmitting = true;
       notifyListeners();
 
       final result = await _authService.login(
@@ -31,21 +32,22 @@ class AuthProvider extends ChangeNotifier {
       await _storageService.saveToken(token);
       user = loggedInUser;
     } finally {
-      isLoading = false;
+      isSubmitting = false;
       notifyListeners();
     }
   }
 
   Future<void> register({
     required String name,
-    String? email,
+    required String email,
     String? phone,
     required String password,
+    required String passwordConfirmation,
     String? companyName,
     String? address,
   }) async {
     try {
-      isLoading = true;
+      isSubmitting = true;
       notifyListeners();
 
       final result = await _authService.register(
@@ -53,6 +55,7 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         phone: phone,
         password: password,
+        passwordConfirmation: passwordConfirmation,
         companyName: companyName,
         address: address,
       );
@@ -63,14 +66,14 @@ class AuthProvider extends ChangeNotifier {
       await _storageService.saveToken(token);
       user = registeredUser;
     } finally {
-      isLoading = false;
+      isSubmitting = false;
       notifyListeners();
     }
   }
 
   Future<void> checkLogin() async {
     try {
-      isLoading = true;
+      isCheckingAuth = true;
       notifyListeners();
 
       final token = await _storageService.getToken();
@@ -84,23 +87,23 @@ class AuthProvider extends ChangeNotifier {
       await _storageService.deleteToken();
       user = null;
     } finally {
-      isLoading = false;
+      isCheckingAuth = false;
       notifyListeners();
     }
   }
 
   Future<void> logout() async {
     try {
-      isLoading = true;
+      isSubmitting = true;
       notifyListeners();
 
       await _authService.logout();
     } catch (_) {
-      // abaikan kalau token invalid
+      //
     } finally {
       await _storageService.deleteToken();
       user = null;
-      isLoading = false;
+      isSubmitting = false;
       notifyListeners();
     }
   }

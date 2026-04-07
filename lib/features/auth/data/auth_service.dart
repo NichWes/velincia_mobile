@@ -37,22 +37,29 @@ class AuthService {
 
   Future<Map<String, dynamic>> register({
     required String name,
-    String? email,
+    required String email,
     String? phone,
     required String password,
+    required String passwordConfirmation,
     String? companyName,
     String? address,
   }) async {
+    final payload = <String, dynamic>{
+      'name': name,
+      'email': email,
+      'password': password,
+      'password_confirmation': passwordConfirmation,
+    };
+
+    if (phone != null && phone.isNotEmpty) payload['phone'] = phone;
+    if (companyName != null && companyName.isNotEmpty) {
+      payload['company_name'] = companyName;
+    }
+    if (address != null && address.isNotEmpty) payload['address'] = address;
+
     final response = await _apiClient.dio.post(
       ApiEndpoints.register,
-      data: {
-        'name': name,
-        'email': email,
-        'phone': phone,
-        'password': password,
-        'company_name': companyName,
-        'address': address,
-      },
+      data: payload,
     );
 
     final data = response.data;
