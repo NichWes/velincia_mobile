@@ -1,6 +1,7 @@
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../models/user_model.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   final ApiClient _apiClient = ApiClient();
@@ -16,6 +17,9 @@ class AuthService {
         'password': password,
       },
     );
+
+    debugPrint('LOGIN RESPONSE STATUS: ${response.statusCode}');
+    debugPrint('LOGIN RESPONSE DATA: ${response.data}');
 
     final data = response.data;
     final token = data['token'];

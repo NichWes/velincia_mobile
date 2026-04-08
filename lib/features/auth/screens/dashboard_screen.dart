@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../project/providers/project_provider.dart';
+import '../../project/screens/project_list_screen.dart';
 import '../providers/auth_provider.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -22,33 +24,56 @@ class DashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: user == null
-            ? const Center(child: Text('User tidak ditemukan'))
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Selamat datang, ${user.name}',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+      body: user == null
+          ? const Center(child: Text('User tidak ditemukan'))
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Halo, ${user.name}',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text('Perusahaan: ${user.companyName ?? '-'}'),
+                        const SizedBox(height: 8),
+                        Text('Email: ${user.email ?? '-'}'),
+                        const SizedBox(height: 8),
+                        Text('Alamat: ${user.address ?? '-'}'),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text('Role: ${user.role}'),
-                  const SizedBox(height: 8),
-                  Text('Email: ${user.email ?? '-'}'),
-                  const SizedBox(height: 8),
-                  Text('Phone: ${user.phone ?? '-'}'),
-                  const SizedBox(height: 8),
-                  Text('Company: ${user.companyName ?? '-'}'),
-                  const SizedBox(height: 8),
-                  Text('Address: ${user.address ?? '-'}'),
-                ],
-              ),
-      ),
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.folder_open),
+                    title: const Text('Project Saya'),
+                    subtitle: const Text('Lihat dan cek detail project'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChangeNotifierProvider(
+                            create: (_) => ProjectProvider(),
+                            child: const ProjectListScreen(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

@@ -26,18 +26,25 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   String _extractErrorMessage(DioException e) {
-    String message = 'Login gagal';
-
+    final statusCode = e.response?.statusCode;
     final data = e.response?.data;
-    if (data is Map<String, dynamic>) {
-      if (data['errors'] is Map) {
-        final errors = data['errors'] as Map;
-        if (errors.isNotEmpty) {
-          final firstError = errors.values.first;
-          if (firstError is List && firstError.isNotEmpty) {
-            return firstError.first.toString();
-          }
+
+    debugPrint('LOGIN STATUS CODE: $statusCode');
+    debugPrint('LOGIN RESPONSE DATA: $data');
+    debugPrint('LOGIN DIO MESSAGE: ${e.message}');
+
+    if (statusCode == 429) {
+      return 'Terlalu banyak percobaan login. Coba lagi dalam 1 menit.';
+    }
+
+    if (data is Map) {
+      final errors = data['errors'];
+      if (errors is Map && errors.isNotEmpty) {
+        final firstError = errors.values.first;
+        if (firstError is List && firstError.isNotEmpty) {
+          return firstError.first.toString();
         }
+        return firstError.toString();
       }
 
       if (data['message'] != null) {
@@ -45,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
 
-    return message;
+    return e.message ?? 'Login gagal';
   }
 
   Future<void> _handleLogin() async {
@@ -68,6 +75,8 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+
+      debugPrint('LOGIN UNKNOWN ERROR: $e');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Login gagal: $e')),
