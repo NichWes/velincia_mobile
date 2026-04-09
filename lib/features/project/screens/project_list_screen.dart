@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/project_provider.dart';
+import 'create_project_screen.dart';
 import 'project_detail_screen.dart';
 
 class ProjectListScreen extends StatefulWidget {
@@ -19,6 +20,22 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
     });
   }
 
+  Future<void> _goToCreateProject() async {
+    final shouldRefresh = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: context.read<ProjectProvider>(),
+          child: const CreateProjectScreen(),
+        ),
+      ),
+    );
+
+    if (shouldRefresh == true && mounted) {
+      await context.read<ProjectProvider>().fetchProjects();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ProjectProvider>();
@@ -26,6 +43,10 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Project Saya'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _goToCreateProject,
+        child: const Icon(Icons.add),
       ),
       body: RefreshIndicator(
         onRefresh: () => context.read<ProjectProvider>().fetchProjects(),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../material/providers/material_provider.dart';
 import '../providers/project_provider.dart';
+import 'add_project_item_screen.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final int projectId;
@@ -21,6 +23,31 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     Future.microtask(() {
       context.read<ProjectProvider>().fetchProjectDetail(widget.projectId);
     });
+  }
+
+  Future<void> _goToAddItem() async {
+    final shouldRefresh = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(
+              value: context.read<ProjectProvider>(),
+            ),
+            ChangeNotifierProvider(
+              create: (_) => MaterialProvider(),
+            ),
+          ],
+          child: AddProjectItemScreen(projectId: widget.projectId),
+        ),
+      ),
+    );
+
+    if (shouldRefresh == true && mounted) {
+      await context
+          .read<ProjectProvider>()
+          .fetchProjectDetail(widget.projectId);
+    }
   }
 
   String _formatStatus(String status) {
@@ -44,6 +71,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail Project'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _goToAddItem,
+        child: const Icon(Icons.add),
       ),
       body: Builder(
         builder: (context) {
