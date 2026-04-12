@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../project/providers/project_provider.dart';
 import '../../project/screens/project_list_screen.dart';
 import '../providers/auth_provider.dart';
+import '../../order/providers/order_provider.dart';
+import '../../order/screens/order_list_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -66,6 +68,26 @@ class DashboardScreen extends StatelessWidget {
                           builder: (_) => ChangeNotifierProvider(
                             create: (_) => ProjectProvider(),
                             child: const ProjectListScreen(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.receipt_long),
+                    title: const Text('Order Saya'),
+                    subtitle: const Text('Lihat daftar dan status order'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChangeNotifierProvider(
+                            create: (_) => OrderProvider(),
+                            child: const OrderListScreen(),
                           ),
                         ),
                       );

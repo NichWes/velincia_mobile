@@ -2,6 +2,8 @@ import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../models/project_model.dart';
 import '../models/project_item_model.dart';
+import '../models/project_estimate_model.dart';
+import '../models/project_item_model.dart';
 
 class ProjectService {
   final ApiClient _apiClient = ApiClient();
@@ -26,6 +28,20 @@ class ProjectService {
     }
 
     throw Exception('Format detail project tidak valid');
+  }
+
+  Future<ProjectEstimateModel> getProjectEstimate(int projectId) async {
+    final response = await _apiClient.dio.get(
+      ApiEndpoints.projectEstimate(projectId),
+    );
+
+    final data = response.data;
+
+    if (data is Map<String, dynamic>) {
+      return ProjectEstimateModel.fromJson(data);
+    }
+
+    throw Exception('Format estimate project tidak valid');
   }
 
   Future<ProjectModel> createProject({

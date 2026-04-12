@@ -10,4 +10,8 @@ class ApiEndpoints {
   static String projectItems(int projectId) => '/projects/$projectId/items';
   static String projectEstimate(int projectId) =>
       '/projects/$projectId/estimate';
+
+  static const String orders = '/orders';
+  static String orderDetail(int id) => '/orders/$id';
+  static String submitOrder(int id) => '/orders/$id/submit';
 }

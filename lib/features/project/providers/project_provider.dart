@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/project_service.dart';
 import '../models/project_model.dart';
+import '../models/project_estimate_model.dart';
 
 class ProjectProvider extends ChangeNotifier {
   final ProjectService _projectService = ProjectService();
@@ -8,6 +9,9 @@ class ProjectProvider extends ChangeNotifier {
   bool isLoadingList = false;
   bool isLoadingDetail = false;
   bool isSubmitting = false;
+  bool isLoadingEstimate = false;
+  ProjectEstimateModel? estimate;
+  String? estimateErrorMessage;
 
   List<ProjectModel> projects = [];
   ProjectModel? selectedProject;
@@ -42,6 +46,21 @@ class ProjectProvider extends ChangeNotifier {
       detailErrorMessage = 'Gagal memuat detail project: $e';
     } finally {
       isLoadingDetail = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchProjectEstimate(int projectId) async {
+    try {
+      isLoadingEstimate = true;
+      estimateErrorMessage = null;
+      notifyListeners();
+
+      estimate = await _projectService.getProjectEstimate(projectId);
+    } catch (e) {
+      estimateErrorMessage = 'Gagal memuat estimasi: $e';
+    } finally {
+      isLoadingEstimate = false;
       notifyListeners();
     }
   }

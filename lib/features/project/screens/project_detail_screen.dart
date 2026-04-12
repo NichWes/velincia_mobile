@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import '../../material/providers/material_provider.dart';
 import '../providers/project_provider.dart';
 import 'add_project_item_screen.dart';
+import 'project_estimate_screen.dart';
+import '../../order/providers/order_provider.dart';
+import '../../order/screens/create_order_screen.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final int projectId;
@@ -48,6 +51,28 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           .read<ProjectProvider>()
           .fetchProjectDetail(widget.projectId);
     }
+  }
+
+  Future<void> _goToCreateOrder() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(
+              value: context.read<ProjectProvider>(),
+            ),
+            ChangeNotifierProvider(
+              create: (_) => OrderProvider(),
+            ),
+          ],
+          child: CreateOrderScreen(projectId: widget.projectId),
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    await context.read<ProjectProvider>().fetchProjectDetail(widget.projectId);
   }
 
   String _formatStatus(String status) {
@@ -169,6 +194,35 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     ),
                   ),
                 ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: context.read<ProjectProvider>(),
+                          child: ProjectEstimateScreen(
+                              projectId: widget.projectId),
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.calculate),
+                  label: const Text('Lihat Estimasi'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _goToCreateOrder,
+                  icon: const Icon(Icons.shopping_cart_checkout),
+                  label: const Text('Buat Order'),
+                ),
+              ),
             ],
           );
         },
