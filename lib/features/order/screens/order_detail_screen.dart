@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/order_provider.dart';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -14,13 +15,32 @@ class OrderDetailScreen extends StatefulWidget {
   State<OrderDetailScreen> createState() => _OrderDetailScreenState();
 }
 
-class _OrderDetailScreenState extends State<OrderDetailScreen> {
+class _OrderDetailScreenState extends State<OrderDetailScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     Future.microtask(() {
-      context.read<OrderProvider>().fetchOrderDetail(widget.orderId);
+      _loadOrderDetail();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadOrderDetail();
+    }
+  }
+
+  Future<void> _loadOrderDetail() async {
+    await context.read<OrderProvider>().fetchOrderDetail(widget.orderId);
   }
 
   String _formatCurrency(double value) {
@@ -47,6 +67,28 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
+  Future<void> _openPayment(String url) async {
+    try {
+      final uri = Uri.parse(url);
+
+      final success = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tidak bisa membuka payment')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal membuka payment: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<OrderProvider>();
@@ -62,7 +104,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (provider.detailErrorMessage != null) {
+          if (provider.detailErrorMessage != null && order == null) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -80,91 +122,107 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             );
           }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        order.orderCode,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text('Project: ${order.project?.title ?? '-'}'),
-                      Text('Status: ${order.status}'),
-                      Text('Order Type: ${order.orderType}'),
-                      Text('Delivery Method: ${order.deliveryMethod}'),
-                      Text('Delivery Address: ${order.deliveryAddress ?? '-'}'),
-                      const SizedBox(height: 8),
-                      Text('Subtotal: ${_formatCurrency(order.subtotal)}'),
-                      Text(
-                          'Shipping Fee: ${_formatCurrency(order.shippingFee)}'),
-                      Text('Total: ${_formatCurrency(order.totalAmount)}'),
-                      const SizedBox(height: 8),
-                      Text('Payment Type: ${order.paymentType ?? '-'}'),
-                      Text(
-                          'Transaction Status: ${order.transactionStatus ?? '-'}'),
-                      Text('Paid At: ${order.paidAt ?? '-'}'),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (order.status == 'draft')
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed:
-                        provider.isSubmitting ? null : _handleSubmitOrder,
-                    child: provider.isSubmitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Submit Order'),
-                  ),
-                ),
-              if (order.status == 'draft') const SizedBox(height: 16),
-              const Text(
-                'Item Order',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              if (order.items.isEmpty)
-                const Card(
+          return RefreshIndicator(
+            onRefresh: _loadOrderDetail,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Card(
                   child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('Belum ada item order'),
-                  ),
-                )
-              else
-                ...order.items.map(
-                  (item) => Card(
-                    child: ListTile(
-                      title: Text(item.nameSnapshot),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 6),
-                          Text('Qty: ${item.qty}'),
-                          Text(
-                              'Unit Price: ${_formatCurrency(item.unitPrice)}'),
-                          Text(
-                              'Line Total: ${_formatCurrency(item.lineTotal)}'),
-                        ],
-                      ),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          order.orderCode,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text('Project: ${order.project?.title ?? '-'}'),
+                        Text('Status: ${order.status}'),
+                        Text('Order Type: ${order.orderType}'),
+                        Text('Delivery Method: ${order.deliveryMethod}'),
+                        Text(
+                            'Delivery Address: ${order.deliveryAddress ?? '-'}'),
+                        const SizedBox(height: 8),
+                        Text('Subtotal: ${_formatCurrency(order.subtotal)}'),
+                        Text(
+                            'Shipping Fee: ${_formatCurrency(order.shippingFee)}'),
+                        Text('Total: ${_formatCurrency(order.totalAmount)}'),
+                        const SizedBox(height: 8),
+                        Text('Payment Type: ${order.paymentType ?? '-'}'),
+                        Text(
+                            'Transaction Status: ${order.transactionStatus ?? '-'}'),
+                        Text('Paid At: ${order.paidAt ?? '-'}'),
+                      ],
                     ),
                   ),
                 ),
-            ],
+                const SizedBox(height: 16),
+                if (order.status == 'draft')
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed:
+                          provider.isSubmitting ? null : _handleSubmitOrder,
+                      child: provider.isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Submit Order'),
+                    ),
+                  ),
+                if (order.status == 'draft') const SizedBox(height: 16),
+                if (order.paymentUrl != null &&
+                    order.status == 'waiting_payment')
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => _openPayment(order.paymentUrl!),
+                      child: const Text('Bayar Sekarang'),
+                    ),
+                  ),
+                if (order.paymentUrl != null &&
+                    order.status == 'waiting_payment')
+                  const SizedBox(height: 16),
+                const Text(
+                  'Item Order',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                if (order.items.isEmpty)
+                  const Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text('Belum ada item order'),
+                    ),
+                  )
+                else
+                  ...order.items.map(
+                    (item) => Card(
+                      child: ListTile(
+                        title: Text(item.nameSnapshot),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 6),
+                            Text('Qty: ${item.qty}'),
+                            Text(
+                                'Unit Price: ${_formatCurrency(item.unitPrice)}'),
+                            Text(
+                                'Line Total: ${_formatCurrency(item.lineTotal)}'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           );
         },
       ),
