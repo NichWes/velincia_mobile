@@ -3,7 +3,6 @@ import '../../../core/api/api_endpoints.dart';
 import '../models/project_model.dart';
 import '../models/project_item_model.dart';
 import '../models/project_estimate_model.dart';
-import '../models/project_item_model.dart';
 
 class ProjectService {
   final ApiClient _apiClient = ApiClient();
