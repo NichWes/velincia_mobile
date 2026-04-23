@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import '../data/project_service.dart';
-import '../models/project_model.dart';
 import '../models/project_estimate_model.dart';
+import '../models/project_model.dart';
 
 class ProjectProvider extends ChangeNotifier {
   final ProjectService _projectService = ProjectService();
 
   bool isLoadingList = false;
   bool isLoadingDetail = false;
-  bool isSubmitting = false;
   bool isLoadingEstimate = false;
-  ProjectEstimateModel? estimate;
-  String? estimateErrorMessage;
+  bool isSubmitting = false;
 
   List<ProjectModel> projects = [];
   ProjectModel? selectedProject;
+  ProjectEstimateModel? estimate;
 
   String? listErrorMessage;
   String? detailErrorMessage;
+  String? estimateErrorMessage;
   String? submitErrorMessage;
 
   Future<void> fetchProjects() async {
@@ -119,6 +119,7 @@ class ProjectProvider extends ChangeNotifier {
       );
 
       await fetchProjectDetail(projectId);
+      await fetchProjectEstimate(projectId);
       return true;
     } catch (e) {
       submitErrorMessage = 'Gagal menambah item: $e';
@@ -131,7 +132,9 @@ class ProjectProvider extends ChangeNotifier {
 
   void clearSelectedProject() {
     selectedProject = null;
+    estimate = null;
     detailErrorMessage = null;
+    estimateErrorMessage = null;
     notifyListeners();
   }
 }

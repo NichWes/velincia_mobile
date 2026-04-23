@@ -48,8 +48,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     );
 
     if (shouldRefresh == true && mounted) {
-      await context.read<ProjectProvider>().fetchProjectDetail(widget.projectId);
-      await context.read<ProjectProvider>().fetchProjectEstimate(widget.projectId);
+      await context
+          .read<ProjectProvider>()
+          .fetchProjectDetail(widget.projectId);
+      await context
+          .read<ProjectProvider>()
+          .fetchProjectEstimate(widget.projectId);
     }
   }
 
@@ -73,7 +77,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
     if (!mounted) return;
     await context.read<ProjectProvider>().fetchProjectDetail(widget.projectId);
-    await context.read<ProjectProvider>().fetchProjectEstimate(widget.projectId);
+    await context
+        .read<ProjectProvider>()
+        .fetchProjectEstimate(widget.projectId);
   }
 
   String _formatStatus(String status) {
@@ -193,9 +199,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _estimateItem('Total Kebutuhan', _formatCurrency(summary.totalEstimateNeeded)),
+              _estimateItem('Total Kebutuhan',
+                  _formatCurrency(summary.totalEstimateNeeded)),
               const SizedBox(width: 12),
-              _estimateItem('Sudah Dibeli', _formatCurrency(summary.totalEstimatePurchased)),
+              _estimateItem('Sudah Dibeli',
+                  _formatCurrency(summary.totalEstimatePurchased)),
             ],
           ),
           const SizedBox(height: 16),
@@ -242,7 +250,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            Text(label,
+                style: const TextStyle(color: Colors.white70, fontSize: 12)),
             const SizedBox(height: 6),
             Text(
               value,
@@ -286,7 +295,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+          Text(label,
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
           const SizedBox(height: 4),
           Text(
             value,
@@ -345,8 +355,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
           return RefreshIndicator(
             onRefresh: () async {
-              await context.read<ProjectProvider>().fetchProjectDetail(widget.projectId);
-              await context.read<ProjectProvider>().fetchProjectEstimate(widget.projectId);
+              await context
+                  .read<ProjectProvider>()
+                  .fetchProjectDetail(widget.projectId);
+              await context
+                  .read<ProjectProvider>()
+                  .fetchProjectEstimate(widget.projectId);
             },
             child: ListView(
               padding: const EdgeInsets.all(16),
@@ -380,7 +394,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: _statusBg(project.status),
                               borderRadius: BorderRadius.circular(999),
@@ -402,7 +417,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         runSpacing: 10,
                         children: [
                           _infoBox('Tipe Project', project.projectType ?? '-'),
-                          _infoBox('Budget', _formatCurrency(project.budgetTarget)),
+                          _infoBox(
+                              'Budget', _formatCurrency(project.budgetTarget)),
                           _infoBox('Jumlah Item', '${project.items.length}'),
                         ],
                       ),
@@ -417,7 +433,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        project.notes?.isNotEmpty == true ? project.notes! : '-',
+                        project.notes?.isNotEmpty == true
+                            ? project.notes!
+                            : '-',
                         style: TextStyle(
                           color: Colors.grey.shade800,
                           height: 1.4,
@@ -445,7 +463,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             MaterialPageRoute(
                               builder: (_) => ChangeNotifierProvider.value(
                                 value: context.read<ProjectProvider>(),
-                                child: ProjectEstimateScreen(projectId: widget.projectId),
+                                child: ProjectEstimateScreen(
+                                    projectId: widget.projectId),
                               ),
                             ),
                           );
@@ -460,6 +479,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          iconColor: Colors.white,
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -528,7 +553,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                   _infoBox('Unit', item.material!.unit!),
                               ],
                             ),
-                            if (item.notes != null && item.notes!.isNotEmpty) ...[
+                            if (item.notes != null &&
+                                item.notes!.isNotEmpty) ...[
                               const SizedBox(height: 12),
                               Text(
                                 'Catatan: ${item.notes}',

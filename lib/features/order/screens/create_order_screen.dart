@@ -22,7 +22,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   String _deliveryMethod = 'pickup';
   final _deliveryAddressController = TextEditingController();
 
-  final Map<int, TextEditingController> _qtyControllers = {};
+  final Map<int, int> _selectedQty = {};
+  final Map<int, bool> _selectedItems = {};
 
   @override
   void initState() {
@@ -30,18 +31,35 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     final project = context.read<ProjectProvider>().selectedProject;
     if (project != null) {
       for (final item in project.items) {
-        _qtyControllers[item.id] = TextEditingController();
+        final remaining = item.qtyNeeded - item.qtyPurchased;
+        _selectedItems[item.id] = false;
+        _selectedQty[item.id] = remaining > 0 ? 1 : 0;
       }
     }
   }
 
   @override
   void dispose() {
-    for (final controller in _qtyControllers.values) {
-      controller.dispose();
-    }
     _deliveryAddressController.dispose();
     super.dispose();
+  }
+
+  void _incrementQty(int itemId, int maxQty) {
+    setState(() {
+      final current = _selectedQty[itemId] ?? 1;
+      if (current < maxQty) {
+        _selectedQty[itemId] = current + 1;
+      }
+    });
+  }
+
+  void _decrementQty(int itemId) {
+    setState(() {
+      final current = _selectedQty[itemId] ?? 1;
+      if (current > 1) {
+        _selectedQty[itemId] = current - 1;
+      }
+    });
   }
 
   Future<void> _handleCreateOrder() async {
@@ -55,13 +73,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     final List<Map<String, dynamic>> itemsPayload = [];
 
     for (final item in project.items) {
-      final controller = _qtyControllers[item.id];
-      final text = controller?.text.trim() ?? '';
+      if (_selectedItems[item.id] != true) continue;
 
-      if (text.isEmpty) continue;
-
-      final qty = int.tryParse(text);
-      if (qty == null || qty <= 0) continue;
+      final qty = _selectedQty[item.id] ?? 0;
+      if (qty <= 0) continue;
 
       itemsPayload.add({
         'project_item_id': item.id,
@@ -71,7 +86,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
     if (itemsPayload.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Isi minimal 1 qty item untuk dipesan')),
+        const SnackBar(content: Text('Pilih minimal 1 item untuk dipesan')),
       );
       return;
     }
@@ -92,8 +107,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => ChangeNotifierProvider.value(
-            value: orderProvider,
+          builder: (_) => ChangeNotifierProvider(
+            create: (_) => OrderProvider()..fetchOrderDetail(order.id),
             child: OrderDetailScreen(orderId: order.id),
           ),
         ),
@@ -108,6 +123,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     }
   }
 
+  String _formatCurrency(double? value) {
+    if (value == null) return '-';
+    return 'Rp ${value.toStringAsFixed(0)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final projectProvider = context.watch<ProjectProvider>();
@@ -120,9 +140,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       );
     }
 
+    final availableItems =
+        project.items.where((e) => (e.qtyNeeded - e.qtyPurchased) > 0).toList();
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F8FC),
       appBar: AppBar(
         title: const Text('Buat Order'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
       body: SafeArea(
         child: Form(
@@ -130,138 +156,292 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              DropdownButtonFormField<String>(
-                value: _orderType,
-                decoration: const InputDecoration(
-                  labelText: 'Order Type',
-                  border: OutlineInputBorder(),
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'partial', child: Text('Partial')),
-                  DropdownMenuItem(value: 'full', child: Text('Full')),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _orderType = value;
-                    });
-                  }
-                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      project.title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<String>(
+                      value: _orderType,
+                      decoration: _inputDecoration('Order Type'),
+                      items: const [
+                        DropdownMenuItem(
+                            value: 'partial', child: Text('Partial')),
+                        DropdownMenuItem(value: 'full', child: Text('Full')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _orderType = value;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<String>(
+                      value: _deliveryMethod,
+                      decoration: _inputDecoration('Delivery Method'),
+                      items: const [
+                        DropdownMenuItem(
+                            value: 'pickup', child: Text('Pickup')),
+                        DropdownMenuItem(
+                            value: 'delivery', child: Text('Delivery')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _deliveryMethod = value;
+                          });
+                        }
+                      },
+                    ),
+                    if (_deliveryMethod == 'delivery') ...[
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _deliveryAddressController,
+                        decoration: _inputDecoration('Alamat Pengiriman'),
+                        validator: (value) {
+                          if (_deliveryMethod == 'delivery' &&
+                              (value == null || value.trim().isEmpty)) {
+                            return 'Alamat pengiriman wajib diisi';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _deliveryMethod,
-                decoration: const InputDecoration(
-                  labelText: 'Delivery Method',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'pickup', child: Text('Pickup')),
-                  DropdownMenuItem(value: 'delivery', child: Text('Delivery')),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _deliveryMethod = value;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              if (_deliveryMethod == 'delivery')
-                TextFormField(
-                  controller: _deliveryAddressController,
-                  decoration: const InputDecoration(
-                    labelText: 'Delivery Address',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (_deliveryMethod == 'delivery' &&
-                        (value == null || value.trim().isEmpty)) {
-                      return 'Alamat pengiriman wajib diisi';
-                    }
-                    return null;
-                  },
-                ),
-              if (_deliveryMethod == 'delivery') const SizedBox(height: 16),
+              const SizedBox(height: 18),
               const Text(
-                'Pilih Qty Item',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                'Pilih Item yang Mau Dibeli',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 12),
-              ...project.items.map((item) {
-                final remaining = item.qtyNeeded - item.qtyPurchased;
+              if (availableItems.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text('Tidak ada item yang bisa dipesan'),
+                )
+              else
+                ...availableItems.map((item) {
+                  final remaining = item.qtyNeeded - item.qtyPurchased;
+                  final isSelected = _selectedItems[item.id] ?? false;
+                  final qty = _selectedQty[item.id] ?? 1;
 
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.displayName,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        Text('Qty needed: ${item.qtyNeeded}'),
-                        Text('Qty purchased: ${item.qtyPurchased}'),
-                        Text('Sisa kebutuhan: $remaining'),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _qtyControllers[item.id],
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Qty order',
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return null;
-                            }
-
-                            final qty = int.tryParse(value.trim());
-                            if (qty == null) {
-                              return 'Harus angka';
-                            }
-
-                            if (qty < 1) {
-                              return 'Minimal 1';
-                            }
-
-                            if (_orderType == 'full' && qty != remaining) {
-                              return 'Untuk full harus sama dengan sisa kebutuhan ($remaining)';
-                            }
-
-                            if (_orderType == 'partial' && qty > remaining) {
-                              return 'Qty melebihi sisa kebutuhan ($remaining)';
-                            }
-
-                            return null;
-                          },
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFF2563EB)
+                            : Colors.grey.shade200,
+                        width: isSelected ? 1.5 : 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.035),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
-                  ),
-                );
-              }),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(22),
+                      onTap: () {
+                        setState(() {
+                          _selectedItems[item.id] = !isSelected;
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Checkbox(
+                              value: isSelected,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedItems[item.id] = value ?? false;
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.displayName,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      _miniChip('Sisa', '$remaining'),
+                                      _miniChip(
+                                          'Unit', item.material?.unit ?? '-'),
+                                      _miniChip(
+                                        'Harga',
+                                        _formatCurrency(
+                                            item.material?.priceEstimate),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Column(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      IconButton(
+                                        onPressed: isSelected
+                                            ? () => _decrementQty(item.id)
+                                            : null,
+                                        icon: const Icon(Icons.remove),
+                                      ),
+                                      SizedBox(
+                                        width: 28,
+                                        child: Center(
+                                          child: Text(
+                                            '$qty',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        onPressed: isSelected
+                                            ? () => _incrementQty(
+                                                item.id, remaining)
+                                            : null,
+                                        icon: const Icon(Icons.add),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
+                height: 54,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    iconColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
                   onPressed:
                       orderProvider.isSubmitting ? null : _handleCreateOrder,
-                  child: orderProvider.isSubmitting
+                  icon: const Icon(Icons.shopping_cart_checkout),
+                  label: orderProvider.isSubmitting
                       ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: Colors.white,
+                          ),
                         )
-                      : const Text('Buat Order'),
+                      : const Text(
+                          'Buat Order',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: const Color(0xFFF8FAFC),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: Colors.grey.shade200),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.3),
+      ),
+    );
+  }
+
+  Widget _miniChip(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Text(
+        '$label: $value',
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

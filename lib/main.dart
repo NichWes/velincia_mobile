@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'features/auth/providers/auth_provider.dart';
-import 'features/auth/screens/auth_wrapper.dart';
+import 'features/auth/screens/splash_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,15 +13,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => AuthProvider()..checkLogin(),
+      create: (_) => AuthProvider(),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Velincia HPL',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)),
           useMaterial3: true,
         ),
-        home: const AuthWrapper(),
+        home: const SplashScreen(),
       ),
     );
   }

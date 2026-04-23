@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import 'register_screen.dart';
+import '../../../shared/utils/app_routes.dart';
+import '../../../shared/utils/greeting_utils.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -161,23 +163,56 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 54,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.16),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: const Icon(
-                        Icons.storefront_rounded,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 62,
+                          height: 62,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.16),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Image.asset(
+                            'assets/images/logo_velincia.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.storefront_rounded,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                'Velincia HPL',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Contractor App',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 18),
-                    const Text(
-                      'Selamat Datang',
-                      style: TextStyle(
+                    Text(
+                      getDynamicGreeting(),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
@@ -333,10 +368,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     : () {
                                         Navigator.push(
                                           context,
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                const RegisterScreen(),
-                                          ),
+                                          buildSlideFadeRoute(
+                                              const RegisterScreen()),
                                         );
                                       },
                                 child: const Text(
