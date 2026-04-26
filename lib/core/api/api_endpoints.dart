@@ -14,4 +14,8 @@ class ApiEndpoints {
   static const String orders = '/orders';
   static String orderDetail(int id) => '/orders/$id';
   static String submitOrder(int id) => '/orders/$id/submit';
+
+  static String orderInvoice(int orderId) => '/orders/$orderId/invoice';
+  static String generateInvoice(int orderId) => '/orders/$orderId/generate-invoice';
+  static String downloadInvoice(int invoiceId) => '/invoices/$invoiceId/download';
 }

@@ -1,6 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../../invoice/providers/invoice_provider.dart';
+import '../../invoice/screens/invoice_preview_screen.dart';
 import '../providers/order_provider.dart';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -23,8 +29,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
     Future.microtask(() {
-      _loadOrderDetail();
+      _loadAll();
     });
   }
 
@@ -37,12 +44,40 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _loadOrderDetail();
+      _loadAll();
+    }
+  }
+
+  Future<void> _loadAll() async {
+    await context.read<OrderProvider>().fetchOrderDetail(widget.orderId);
+
+    if (!mounted) return;
+
+    final order = context.read<OrderProvider>().selectedOrder;
+    if (order != null && _canHaveInvoice(order.status)) {
+      await context.read<InvoiceProvider>().fetchInvoiceByOrder(widget.orderId);
     }
   }
 
   Future<void> _loadOrderDetail() async {
     await context.read<OrderProvider>().fetchOrderDetail(widget.orderId);
+
+    if (!mounted) return;
+
+    final order = context.read<OrderProvider>().selectedOrder;
+    if (order != null && _canHaveInvoice(order.status)) {
+      await context.read<InvoiceProvider>().fetchInvoiceByOrder(widget.orderId);
+    }
+  }
+
+  bool _canHaveInvoice(String status) {
+    return [
+      'paid',
+      'processing',
+      'shipped',
+      'ready_pickup',
+      'completed',
+    ].contains(status);
   }
 
   String _formatCurrency(double value) {
@@ -51,6 +86,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
 
   String _formatStatusLabel(String status) {
     return status.replaceAll('_', ' ').toUpperCase();
+  }
+
+  String _formatDateTime(String? value) {
+    if (value == null || value.isEmpty) return '-';
+
+    try {
+      final date = DateTime.parse(value).toLocal();
+      return '${date.day.toString().padLeft(2, '0')}-'
+          '${date.month.toString().padLeft(2, '0')}-'
+          '${date.year} '
+          '${date.hour.toString().padLeft(2, '0')}:'
+          '${date.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return value;
+    }
   }
 
   Color _statusBg(String status) {
@@ -113,6 +163,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Order berhasil disubmit')),
       );
+      await _loadAll();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -160,6 +211,72 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     }
   }
 
+  Future<void> _handleGenerateInvoice() async {
+    final invoiceProvider = context.read<InvoiceProvider>();
+
+    final result = await invoiceProvider.generateInvoice(widget.orderId);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result != null
+              ? 'Invoice berhasil dibuat'
+              : invoiceProvider.errorMessage ?? 'Gagal membuat invoice',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handlePreviewInvoice() async {
+    final invoiceProvider = context.read<InvoiceProvider>();
+
+    final File? file = await invoiceProvider.downloadInvoice();
+
+    if (!mounted) return;
+
+    if (file == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text(invoiceProvider.errorMessage ?? 'Gagal membuka invoice'),
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InvoicePreviewScreen(
+          file: file,
+          title: invoiceProvider.invoice?.invoiceNumber ?? 'Invoice',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleOpenInvoiceExternal() async {
+    final invoiceProvider = context.read<InvoiceProvider>();
+
+    final File? file = await invoiceProvider.downloadInvoice();
+
+    if (!mounted) return;
+
+    if (file == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text(invoiceProvider.errorMessage ?? 'Gagal membuka invoice'),
+        ),
+      );
+      return;
+    }
+
+    await OpenFilex.open(file.path);
+  }
+
   Widget _timelineStep({
     required String label,
     required bool isActive,
@@ -174,7 +291,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               width: 18,
               height: 18,
               decoration: BoxDecoration(
-                color: isActive ? const Color(0xFF22C55E) : Colors.grey.shade300,
+                color:
+                    isActive ? const Color(0xFF22C55E) : Colors.grey.shade300,
                 shape: BoxShape.circle,
               ),
             ),
@@ -182,7 +300,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               Container(
                 width: 2,
                 height: 34,
-                color: isActive ? const Color(0xFF22C55E) : Colors.grey.shade300,
+                color:
+                    isActive ? const Color(0xFF22C55E) : Colors.grey.shade300,
               ),
           ],
         ),
@@ -204,7 +323,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   }
 
   Widget _buildTimeline(String status) {
-    final steps = ['draft', 'waiting_admin', 'waiting_payment', 'paid', 'processing'];
+    final steps = [
+      'draft',
+      'waiting_admin',
+      'waiting_payment',
+      'paid',
+      'processing',
+    ];
 
     List<String> finalSteps;
     if (status == 'completed') {
@@ -249,7 +374,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          ),
           const SizedBox(height: 4),
           Text(
             value,
@@ -260,6 +388,158 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _invoiceSection(String orderStatus) {
+    if (!_canHaveInvoice(orderStatus)) {
+      return const SizedBox.shrink();
+    }
+
+    return Consumer<InvoiceProvider>(
+      builder: (context, invoiceProvider, _) {
+        final invoice = invoiceProvider.invoice;
+
+        return Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Invoice',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (invoiceProvider.isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: LinearProgressIndicator(),
+                )
+              else if (invoice == null) ...[
+                Text(
+                  'Invoice belum tersedia. Kamu bisa generate invoice setelah order sudah dibayar.',
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      iconColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: invoiceProvider.isGenerating
+                        ? null
+                        : _handleGenerateInvoice,
+                    icon: const Icon(Icons.receipt_long_rounded),
+                    label: Text(
+                      invoiceProvider.isGenerating
+                          ? 'Membuat invoice...'
+                          : 'Generate Invoice',
+                    ),
+                  ),
+                ),
+              ] else ...[
+                Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.description_rounded,
+                        color: Color(0xFF2563EB),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        invoice.invoiceNumber,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (invoice.generatedAt != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Dibuat: ${_formatDateTime(invoice.generatedAt)}',
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: invoiceProvider.isDownloading
+                            ? null
+                            : _handlePreviewInvoice,
+                        icon: const Icon(Icons.visibility_rounded),
+                        label: const Text('Preview'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          iconColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: invoiceProvider.isDownloading
+                            ? null
+                            : _handleOpenInvoiceExternal,
+                        icon: const Icon(Icons.download_rounded),
+                        label: Text(
+                          invoiceProvider.isDownloading
+                              ? 'Loading...'
+                              : 'Buka PDF',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -334,7 +614,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: _statusBg(order.status),
                                   borderRadius: BorderRadius.circular(999),
@@ -384,19 +667,39 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             spacing: 10,
                             runSpacing: 10,
                             children: [
-                              _infoTile('Subtotal', _formatCurrency(order.subtotal)),
-                              _infoTile('Shipping Fee', _formatCurrency(order.shippingFee)),
-                              _infoTile('Total', _formatCurrency(order.totalAmount)),
-                              _infoTile('Payment Type', order.paymentType ?? '-'),
-                              _infoTile('Transaction', order.transactionStatus ?? '-'),
-                              _infoTile('Paid At', order.paidAt ?? '-'),
+                              _infoTile(
+                                'Subtotal',
+                                _formatCurrency(order.subtotal),
+                              ),
+                              _infoTile(
+                                'Shipping Fee',
+                                _formatCurrency(order.shippingFee),
+                              ),
+                              _infoTile(
+                                'Total',
+                                _formatCurrency(order.totalAmount),
+                              ),
+                              _infoTile(
+                                'Payment Type',
+                                order.paymentType ?? '-',
+                              ),
+                              _infoTile(
+                                'Transaction',
+                                order.transactionStatus ?? '-',
+                              ),
+                              _infoTile(
+                                'Paid At',
+                                _formatDateTime(order.paidAt),
+                              ),
                             ],
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 16),
-
+                    _invoiceSection(order.status),
+                    if (_canHaveInvoice(order.status))
+                      const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
@@ -425,9 +728,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
                     if (order.status == 'draft')
                       SizedBox(
                         width: double.infinity,
@@ -435,30 +736,36 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             backgroundColor: const Color(0xFF2563EB),
+                            foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          onPressed: provider.isSubmitting ? null : _handleSubmitOrder,
+                          onPressed:
+                              provider.isSubmitting ? null : _handleSubmitOrder,
                           child: provider.isSubmitting
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
                                 )
                               : const Text('Submit Order'),
                         ),
                       ),
-
                     if (order.status == 'draft') const SizedBox(height: 16),
-
-                    if (order.paymentUrl != null && order.status == 'waiting_payment')
+                    if (order.paymentUrl != null &&
+                        order.status == 'waiting_payment')
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             backgroundColor: const Color(0xFF16A34A),
+                            foregroundColor: Colors.white,
+                            iconColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -470,10 +777,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                           label: const Text('Bayar Sekarang'),
                         ),
                       ),
-
-                    if (order.paymentUrl != null && order.status == 'waiting_payment')
+                    if (order.paymentUrl != null &&
+                        order.status == 'waiting_payment')
                       const SizedBox(height: 16),
-
                     const Text(
                       'Item Order',
                       style: TextStyle(
@@ -482,7 +788,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                       ),
                     ),
                     const SizedBox(height: 12),
-
                     if (order.items.isEmpty)
                       Container(
                         padding: const EdgeInsets.all(18),
@@ -525,8 +830,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                   runSpacing: 10,
                                   children: [
                                     _infoTile('Qty', '${item.qty}'),
-                                    _infoTile('Unit Price', _formatCurrency(item.unitPrice)),
-                                    _infoTile('Line Total', _formatCurrency(item.lineTotal)),
+                                    _infoTile(
+                                      'Unit Price',
+                                      _formatCurrency(item.unitPrice),
+                                    ),
+                                    _infoTile(
+                                      'Line Total',
+                                      _formatCurrency(item.lineTotal),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -537,7 +848,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   ],
                 ),
               ),
-
               if (_isOpeningPayment)
                 Container(
                   color: Colors.black.withOpacity(0.18),

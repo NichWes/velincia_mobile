@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../project/providers/project_provider.dart';
+import '../../invoice/providers/invoice_provider.dart';
 import '../providers/order_provider.dart';
 import 'order_detail_screen.dart';
 
@@ -107,8 +108,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => ChangeNotifierProvider(
-            create: (_) => OrderProvider()..fetchOrderDetail(order.id),
+          builder: (_) => MultiProvider(
+            providers: [
+              ChangeNotifierProvider(
+                create: (_) => OrderProvider()..fetchOrderDetail(order.id),
+              ),
+              ChangeNotifierProvider(
+                create: (_) => InvoiceProvider()..fetchInvoiceByOrder(order.id),
+              ),
+            ],
             child: OrderDetailScreen(orderId: order.id),
           ),
         ),

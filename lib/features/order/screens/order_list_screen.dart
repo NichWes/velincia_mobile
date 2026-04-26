@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../shared/utils/status_utils.dart';
 import '../../../shared/widgets/app_section_header.dart';
 import '../../../shared/widgets/status_badge.dart';
+import '../../invoice/providers/invoice_provider.dart';
 import '../providers/order_provider.dart';
 import 'order_detail_screen.dart';
 
@@ -44,7 +45,8 @@ class _OrderListScreenState extends State<OrderListScreen> {
           children: [
             const AppSectionHeader(
               title: 'Riwayat Order',
-              subtitle: 'Lihat status pesanan, pembayaran, dan progres order',
+              subtitle:
+                  'Lihat status pesanan, pembayaran, invoice, dan progres order',
             ),
             const SizedBox(height: 16),
             if (provider.isLoadingList && provider.orders.isEmpty)
@@ -52,7 +54,8 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 padding: EdgeInsets.only(top: 120),
                 child: Center(child: CircularProgressIndicator()),
               )
-            else if (provider.listErrorMessage != null && provider.orders.isEmpty)
+            else if (provider.listErrorMessage != null &&
+                provider.orders.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 120),
                 child: Center(
@@ -90,8 +93,15 @@ class _OrderListScreenState extends State<OrderListScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ChangeNotifierProvider(
-                            create: (_) => OrderProvider(),
+                          builder: (_) => MultiProvider(
+                            providers: [
+                              ChangeNotifierProvider(
+                                create: (_) => OrderProvider(),
+                              ),
+                              ChangeNotifierProvider(
+                                create: (_) => InvoiceProvider(),
+                              ),
+                            ],
                             child: OrderDetailScreen(orderId: order.id),
                           ),
                         ),
@@ -134,8 +144,10 @@ class _OrderListScreenState extends State<OrderListScreen> {
                             runSpacing: 10,
                             children: [
                               _chipInfo(Icons.layers_outlined, order.orderType),
-                              _chipInfo(Icons.local_shipping_outlined, order.deliveryMethod),
-                              _chipInfo(Icons.payments_outlined, _formatCurrency(order.totalAmount)),
+                              _chipInfo(Icons.local_shipping_outlined,
+                                  order.deliveryMethod),
+                              _chipInfo(Icons.payments_outlined,
+                                  _formatCurrency(order.totalAmount)),
                             ],
                           ),
                           const SizedBox(height: 14),
@@ -149,8 +161,11 @@ class _OrderListScreenState extends State<OrderListScreen> {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Icon(Icons.arrow_forward_rounded,
-                                  size: 18, color: Colors.deepPurple.shade700),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 18,
+                                color: Colors.deepPurple.shade700,
+                              ),
                             ],
                           ),
                         ],
