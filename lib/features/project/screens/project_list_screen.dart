@@ -4,6 +4,7 @@ import '../../../shared/utils/status_utils.dart';
 import '../../../shared/widgets/app_section_header.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../providers/project_provider.dart';
+import '../providers/project_measurement_provider.dart';
 import 'create_project_screen.dart';
 import 'project_detail_screen.dart';
 
@@ -58,8 +59,20 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _goToCreateProject,
         backgroundColor: const Color(0xFF2563EB),
-        icon: const Icon(Icons.add),
-        label: const Text('Project Baru'),
+        foregroundColor: Colors.white,
+        elevation: 8,
+        icon: const Icon(
+          Icons.add_rounded,
+          color: Colors.white,
+        ),
+        label: const Text(
+          'Project Baru',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+            fontSize: 14,
+          ),
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: () => context.read<ProjectProvider>().fetchProjects(),
@@ -76,7 +89,8 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                 padding: EdgeInsets.only(top: 120),
                 child: Center(child: CircularProgressIndicator()),
               )
-            else if (provider.listErrorMessage != null && provider.projects.isEmpty)
+            else if (provider.listErrorMessage != null &&
+                provider.projects.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 120),
                 child: Center(
@@ -114,11 +128,18 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ChangeNotifierProvider(
-                            create: (_) => ProjectProvider(),
-                            child: ProjectDetailScreen(projectId: project.id),
-                          ),
-                        ),
+                            builder: (_) => MultiProvider(
+                                  providers: [
+                                    ChangeNotifierProvider(
+                                        create: (_) => ProjectProvider()
+                                          ..fetchProjectDetail(project.id)),
+                                    ChangeNotifierProvider(
+                                        create: (_) =>
+                                            ProjectMeasurementProvider()),
+                                  ],
+                                  child: ProjectDetailScreen(
+                                      projectId: project.id),
+                                )),
                       );
                     },
                     child: Padding(
@@ -151,10 +172,12 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                             children: [
                               _miniInfo('Tipe', project.projectType ?? '-'),
                               _miniInfo('Item', '${project.itemsCount ?? 0}'),
-                              _miniInfo('Budget', _formatCurrency(project.budgetTarget)),
+                              _miniInfo('Budget',
+                                  _formatCurrency(project.budgetTarget)),
                             ],
                           ),
-                          if (project.notes != null && project.notes!.isNotEmpty) ...[
+                          if (project.notes != null &&
+                              project.notes!.isNotEmpty) ...[
                             const SizedBox(height: 14),
                             Text(
                               project.notes!,
@@ -203,7 +226,8 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+          Text(label,
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
           const SizedBox(height: 4),
           Text(
             value,

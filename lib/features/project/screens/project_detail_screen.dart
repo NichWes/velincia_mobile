@@ -6,6 +6,8 @@ import '../../order/screens/create_order_screen.dart';
 import '../providers/project_provider.dart';
 import 'add_project_item_screen.dart';
 import 'project_estimate_screen.dart';
+import '../providers/project_measurement_provider.dart';
+import '../widgets/project_measurement_card.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final int projectId;
@@ -322,10 +324,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _goToAddItem,
         backgroundColor: const Color(0xFF2563EB),
-        child: const Icon(Icons.add),
+        foregroundColor: Colors.white,
+        elevation: 8,
+        icon: const Icon(
+          Icons.add_rounded,
+          color: Colors.white,
+        ),
+        label: const Text(
+          'Tambah Item',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+            fontSize: 14,
+          ),
+        ),
       ),
       body: Builder(
         builder: (context) {
@@ -361,6 +376,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               await context
                   .read<ProjectProvider>()
                   .fetchProjectEstimate(widget.projectId);
+              await context
+                  .read<ProjectMeasurementProvider>()
+                  .fetchMeasurements(widget.projectId);
             },
             child: ListView(
               padding: const EdgeInsets.all(16),
@@ -446,6 +464,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 ),
                 const SizedBox(height: 16),
                 _buildEstimateCard(provider),
+                const SizedBox(height: 16),
+                ProjectMeasurementCard(projectId: widget.projectId),
                 const SizedBox(height: 16),
                 Row(
                   children: [
