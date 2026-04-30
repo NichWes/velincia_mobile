@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../material/providers/material_provider.dart';
 import '../../order/providers/order_provider.dart';
 import '../../order/screens/create_order_screen.dart';
+import '../screens/project_discussion_screen.dart';
 import '../providers/project_provider.dart';
 import 'add_project_item_screen.dart';
 import 'project_estimate_screen.dart';
 import '../providers/project_measurement_provider.dart';
+import '../providers/project_attachment_provider.dart';
+import '../providers/project_discussion_provider.dart';
 import '../widgets/project_measurement_card.dart';
+import '../widgets/project_attachment_card.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final int projectId;
@@ -317,6 +322,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final provider = context.watch<ProjectProvider>();
     final project = provider.selectedProject;
 
+    final authProvider = context.watch<AuthProvider>();
+    final currentUserId = authProvider.user?.id ?? 0;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FC),
       appBar: AppBar(
@@ -379,6 +387,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               await context
                   .read<ProjectMeasurementProvider>()
                   .fetchMeasurements(widget.projectId);
+              await context
+                  .read<ProjectAttachmentProvider>()
+                  .fetchAttachments(widget.projectId);
             },
             child: ListView(
               padding: const EdgeInsets.all(16),
@@ -467,12 +478,73 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 const SizedBox(height: 16),
                 ProjectMeasurementCard(projectId: widget.projectId),
                 const SizedBox(height: 16),
-                Row(
+                ProjectAttachmentCard(projectId: widget.projectId),
+                const SizedBox(height: 16),
+                Column(
                   children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: const BorderSide(color: Color(0xFF2563EB)),
+                              foregroundColor: const Color(0xFF2563EB),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ChangeNotifierProvider.value(
+                                    value: context.read<ProjectProvider>(),
+                                    child: ProjectEstimateScreen(
+                                      projectId: widget.projectId,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.calculate),
+                            label: const Text('Estimasi'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              backgroundColor: const Color(0xFF2563EB),
+                              foregroundColor: Colors.white,
+                              iconColor: Colors.white,
+                              textStyle: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            onPressed: _goToCreateOrder,
+                            icon: const Icon(Icons.shopping_cart_checkout),
+                            label: const Text('Order'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                          iconColor: Colors.white,
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -481,37 +553,18 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => ChangeNotifierProvider.value(
-                                value: context.read<ProjectProvider>(),
-                                child: ProjectEstimateScreen(
-                                    projectId: widget.projectId),
+                              builder: (_) => ChangeNotifierProvider(
+                                create: (_) => ProjectDiscussionProvider(),
+                                child: ProjectDiscussionScreen(
+                                  projectId: widget.projectId,
+                                  currentUserId: currentUserId,
+                                ),
                               ),
                             ),
                           );
                         },
-                        icon: const Icon(Icons.calculate),
-                        label: const Text('Lihat Estimasi'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          backgroundColor: const Color(0xFF2563EB),
-                          foregroundColor: Colors.white,
-                          iconColor: Colors.white,
-                          textStyle: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: _goToCreateOrder,
-                        icon: const Icon(Icons.shopping_cart_checkout),
-                        label: const Text('Buat Order'),
+                        icon: const Icon(Icons.chat_bubble_rounded),
+                        label: const Text('Diskusi Project'),
                       ),
                     ),
                   ],

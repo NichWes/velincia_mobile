@@ -5,6 +5,7 @@ import '../../../shared/widgets/app_section_header.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../providers/project_provider.dart';
 import '../providers/project_measurement_provider.dart';
+import '../providers/project_attachment_provider.dart';
 import 'create_project_screen.dart';
 import 'project_detail_screen.dart';
 
@@ -128,18 +129,25 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => MultiProvider(
-                                  providers: [
-                                    ChangeNotifierProvider(
-                                        create: (_) => ProjectProvider()
-                                          ..fetchProjectDetail(project.id)),
-                                    ChangeNotifierProvider(
-                                        create: (_) =>
-                                            ProjectMeasurementProvider()),
-                                  ],
-                                  child: ProjectDetailScreen(
-                                      projectId: project.id),
-                                )),
+                          builder: (_) => MultiProvider(
+                            providers: [
+                              ChangeNotifierProvider(
+                                create: (_) => ProjectProvider()
+                                  ..fetchProjectDetail(project.id)
+                                  ..fetchProjectEstimate(project.id),
+                              ),
+                              ChangeNotifierProvider(
+                                create: (_) => ProjectMeasurementProvider()
+                                  ..fetchMeasurements(project.id),
+                              ),
+                              ChangeNotifierProvider(
+                                create: (_) => ProjectAttachmentProvider()
+                                  ..fetchAttachments(project.id),
+                              ),
+                            ],
+                            child: ProjectDetailScreen(projectId: project.id),
+                          ),
+                        ),
                       );
                     },
                     child: Padding(
