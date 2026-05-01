@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../providers/project_discussion_provider.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'discussion_image_preview_screen.dart';
 
 class ProjectDiscussionScreen extends StatefulWidget {
   final int projectId;
@@ -68,6 +71,34 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
         );
       }
     });
+  }
+
+  Future<void> _pickAndSendImage() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png'],
+      allowMultiple: false,
+    );
+
+    if (result == null || result.files.single.path == null) return;
+
+    final path = result.files.single.path!;
+
+    final ok = await context
+        .read<ProjectDiscussionProvider>()
+        .sendImage(widget.projectId, path);
+
+    if (!mounted) return;
+
+    if (!ok) {
+      final error = context.read<ProjectDiscussionProvider>().errorMessage;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error ?? 'Gagal mengirim gambar')),
+      );
+      return;
+    }
+
+    _scrollToBottom();
   }
 
   String _formatTime(String dateTime) {
@@ -195,12 +226,15 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
   }
 
   Widget _chatBubble(DiscussionMessage msg, bool isMe) {
+    final hasImage = msg.fileUrl != null && msg.fileUrl!.isNotEmpty;
+    final hasText = msg.message.trim().isNotEmpty;
+
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+          maxWidth: MediaQuery.of(context).size.width * 0.76,
         ),
         child: Column(
           crossAxisAlignment:
@@ -213,49 +247,98 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
                   msg.senderName,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey.shade600,
+                    color: Colors.grey.shade700,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              padding: EdgeInsets.all(hasImage ? 6 : 12),
               decoration: BoxDecoration(
                 color: isMe ? const Color(0xFF2563EB) : Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isMe ? 18 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 18),
+                  bottomLeft: Radius.circular(isMe ? 18 : 5),
+                  bottomRight: Radius.circular(isMe ? 5 : 18),
                 ),
+                border:
+                    isMe ? null : Border.all(color: const Color(0xFFE5E7EB)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withOpacity(0.06),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment:
+                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    msg.message,
-                    style: TextStyle(
-                      color: isMe ? Colors.white : const Color(0xFF111827),
-                      fontSize: 14,
-                      height: 1.4,
-                      fontWeight: FontWeight.w500,
+                  if (hasImage)
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DiscussionImagePreviewScreen(
+                              imageUrl: msg.fileUrl!,
+                            ),
+                          ),
+                        );
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image.network(
+                          msg.fileUrl!,
+                          width: 220,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 220,
+                            height: 140,
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: Icon(Icons.broken_image_rounded),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                  if (hasImage && hasText) const SizedBox(height: 8),
+                  if (hasText)
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: hasImage ? 6 : 0,
+                        vertical: hasImage ? 2 : 0,
+                      ),
+                      child: Text(
+                        msg.message,
+                        style: TextStyle(
+                          color: isMe ? Colors.white : const Color(0xFF111827),
+                          fontSize: 14,
+                          height: 1.45,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 6),
-                  Text(
-                    _formatTime(msg.createdAt),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isMe ? Colors.white70 : Colors.grey.shade500,
-                      fontWeight: FontWeight.w600,
+                  Padding(
+                    padding: EdgeInsets.only(
+                      right: hasImage ? 6 : 0,
+                      left: hasImage ? 6 : 0,
+                      bottom: hasImage ? 2 : 0,
+                    ),
+                    child: Text(
+                      _formatTime(msg.createdAt),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isMe
+                            ? Colors.white.withOpacity(0.82)
+                            : Colors.grey.shade600,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],
@@ -286,6 +369,13 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
         top: false,
         child: Row(
           children: [
+            IconButton(
+              onPressed: provider.isSending ? null : _pickAndSendImage,
+              icon: const Icon(
+                Icons.image_rounded,
+                color: Color(0xFF2563EB),
+              ),
+            ),
             Expanded(
               child: TextField(
                 controller: _controller,

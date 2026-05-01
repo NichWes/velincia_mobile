@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/api/api_client.dart';
+import 'package:dio/dio.dart';
 
 class DiscussionMessage {
   final int id;
@@ -7,6 +8,9 @@ class DiscussionMessage {
   final int senderId;
   final String senderName;
   final String createdAt;
+  final String? fileUrl;
+  final String? fileType;
+  final String? fileName;
 
   DiscussionMessage({
     required this.id,
@@ -14,6 +18,9 @@ class DiscussionMessage {
     required this.senderId,
     required this.senderName,
     required this.createdAt,
+    this.fileUrl,
+    this.fileType,
+    this.fileName,
   });
 
   factory DiscussionMessage.fromJson(Map<String, dynamic> json) {
@@ -23,6 +30,9 @@ class DiscussionMessage {
       senderId: int.tryParse(json['sender_id'].toString()) ?? 0,
       senderName: json['sender']?['name']?.toString() ?? '-',
       createdAt: json['created_at']?.toString() ?? '',
+      fileUrl: json['file_url']?.toString(),
+      fileType: json['file_type']?.toString(),
+      fileName: json['file_name']?.toString(),
     );
   }
 }
@@ -83,6 +93,46 @@ class ProjectDiscussionProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       errorMessage = 'Gagal mengirim pesan: $e';
+      debugPrint(errorMessage);
+      return false;
+    } finally {
+      isSending = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> sendImage(int projectId, String filePath) async {
+    try {
+      isSending = true;
+      errorMessage = null;
+      notifyListeners();
+
+      final fileName = filePath.split('/').last;
+
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          filePath,
+          filename: fileName,
+        ),
+      });
+
+      final res = await _dio.post(
+        '/projects/$projectId/discussion/messages',
+        data: formData,
+      );
+
+      final data = res.data['data'];
+
+      if (data != null) {
+        messages.add(
+          DiscussionMessage.fromJson(Map<String, dynamic>.from(data)),
+        );
+      }
+
+      await fetchDiscussion(projectId);
+      return true;
+    } catch (e) {
+      errorMessage = 'Gagal mengirim gambar: $e';
       debugPrint(errorMessage);
       return false;
     } finally {
