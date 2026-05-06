@@ -1,5 +1,6 @@
 class AppConstants {
-  // static const String baseUrl = 'http://10.0.2.2:8000/api';
-  // static const String baseUrl = 'http://192.168.1.6:8000/api';
-  static const String baseUrl = 'http://127.0.0.1:8000/api';
+  static const String baseUrl = 'http://192.168.1.76:8000/api';
+
+  static const String pusherKey = '610f7c10cc4e73d2729f';
+  static const String pusherCluster = 'ap1';
 }

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:async';
 import '../providers/project_discussion_provider.dart';
-import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'discussion_image_preview_screen.dart';
 
@@ -24,38 +22,27 @@ class ProjectDiscussionScreen extends StatefulWidget {
 class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  Timer? _refreshTimer;
+
+  int _lastMessageCount = 0;
 
   @override
   void initState() {
     super.initState();
 
     Future.microtask(() async {
-      await context
-          .read<ProjectDiscussionProvider>()
-          .fetchDiscussion(widget.projectId);
-
-      _scrollToBottom();
-    });
-
-    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
-      if (!mounted) return;
-
       final provider = context.read<ProjectDiscussionProvider>();
-      final oldCount = provider.messages.length;
 
       await provider.fetchDiscussion(widget.projectId);
+      await provider.startRealtime(widget.projectId);
 
-      final newCount = provider.messages.length;
-      if (newCount > oldCount) {
-        _scrollToBottom();
-      }
+      _lastMessageCount = provider.messages.length;
+      _scrollToBottom();
     });
   }
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
+    context.read<ProjectDiscussionProvider>().stopRealtime();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -63,13 +50,17 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
-      }
+      Future.delayed(const Duration(milliseconds: 120), () {
+        if (!mounted) return;
+
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     });
   }
 
@@ -141,22 +132,82 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<ProjectDiscussionProvider>();
 
-    debugPrint('TOTAL MESSAGES: ${provider.messages.length}');
-    debugPrint('CURRENT USER ID: ${widget.currentUserId}');
+    if (provider.messages.length != _lastMessageCount) {
+      _lastMessageCount = provider.messages.length;
+      _scrollToBottom();
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FC),
       appBar: AppBar(
-        title: const Text(
-          'Diskusi Project',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
+        titleSpacing: 0,
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF111827),
         elevation: 0,
+        title: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: const Color(0xFFDBEAFE),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.support_agent_rounded,
+                color: Color(0xFF2563EB),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Diskusi Project',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: provider.isRealtimeConnected
+                              ? const Color(0xFF22C55E)
+                              : Colors.orange,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        provider.isRealtimeConnected
+                            ? 'Realtime aktif'
+                            : 'Menghubungkan realtime...',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: provider.isRealtimeConnected
+                              ? const Color(0xFF16A34A)
+                              : Colors.orange.shade700,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       body: Column(
         children: [
+          _infoBanner(provider),
           Expanded(
             child: provider.isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -175,6 +226,42 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
                       ),
           ),
           _inputBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoBanner(ProjectDiscussionProvider provider) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.info_outline_rounded,
+            color: Color(0xFF2563EB),
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              provider.isRealtimeConnected
+                  ? 'Chat terhubung langsung dengan admin. Balasan akan muncul otomatis.'
+                  : 'Chat tetap bisa digunakan. Jika realtime belum aktif, pesan akan muncul setelah dimuat ulang.',
+              style: const TextStyle(
+                color: Color(0xFF1E3A8A),
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+                fontSize: 12.5,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -244,7 +331,9 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
               Padding(
                 padding: const EdgeInsets.only(left: 8, bottom: 4),
                 child: Text(
-                  msg.senderName,
+                  msg.senderRole == 'admin'
+                      ? 'Admin Velincia HPL'
+                      : msg.senderName,
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.grey.shade700,
