@@ -86,7 +86,7 @@ class ProjectDiscussionProvider extends ChangeNotifier {
 
       _syncMessageIds();
     } catch (e) {
-      errorMessage = 'Gagal memuat diskusi: $e';
+      errorMessage = _extractApiError(e);
       debugPrint(errorMessage);
     } finally {
       isLoading = false;
@@ -164,8 +164,7 @@ class ProjectDiscussionProvider extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      errorMessage = 'Gagal mengirim gambar: $e';
-      debugPrint(errorMessage);
+      errorMessage = _extractApiError(e);
       return false;
     } finally {
       isSending = false;
@@ -193,6 +192,34 @@ class ProjectDiscussionProvider extends ChangeNotifier {
       ..addAll(messages.map((m) => m.id).where((id) => id != 0));
   }
 
+  String _extractApiError(dynamic error) {
+    try {
+      final response = error.response;
+      final data = response?.data;
+
+      if (data is Map<String, dynamic>) {
+        if (data['errors'] is Map) {
+          final errors = data['errors'] as Map;
+          if (errors.isNotEmpty) {
+            final firstValue = errors.values.first;
+            if (firstValue is List && firstValue.isNotEmpty) {
+              return firstValue.first.toString();
+            }
+            return firstValue.toString();
+          }
+        }
+
+        if (data['message'] != null) {
+          return data['message'].toString();
+        }
+      }
+
+      return 'Terjadi kesalahan. Silakan coba lagi.';
+    } catch (_) {
+      return 'Terjadi kesalahan. Silakan coba lagi.';
+    }
+  }
+
   Future<bool> sendMessage(int projectId, String text) async {
     try {
       isSending = true;
@@ -216,7 +243,7 @@ class ProjectDiscussionProvider extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      errorMessage = 'Gagal mengirim pesan: $e';
+      errorMessage = _extractApiError(e);
       debugPrint(errorMessage);
       return false;
     } finally {
@@ -257,7 +284,7 @@ class ProjectDiscussionProvider extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      errorMessage = 'Gagal mengirim gambar: $e';
+      errorMessage = _extractApiError(e);
       debugPrint(errorMessage);
       return false;
     } finally {

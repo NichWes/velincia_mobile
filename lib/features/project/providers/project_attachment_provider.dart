@@ -26,7 +26,7 @@ class ProjectAttachmentProvider extends ChangeNotifier {
           .map<ProjectAttachment>((e) => ProjectAttachment.fromJson(e))
           .toList();
     } catch (e) {
-      errorMessage = 'Gagal memuat attachment: $e';
+      errorMessage = _extractApiError(e);
     } finally {
       isLoading = false;
       notifyListeners();
@@ -43,7 +43,7 @@ class ProjectAttachmentProvider extends ChangeNotifier {
       attachments.insert(0, ProjectAttachment.fromJson(data));
       return true;
     } catch (e) {
-      errorMessage = 'Gagal upload file: $e';
+      errorMessage = _extractApiError(e);
       return false;
     } finally {
       isUploading = false;
@@ -61,11 +61,39 @@ class ProjectAttachmentProvider extends ChangeNotifier {
       attachments.removeWhere((e) => e.id == attachmentId);
       return true;
     } catch (e) {
-      errorMessage = 'Gagal menghapus attachment: $e';
+      errorMessage = _extractApiError(e);
       return false;
     } finally {
       isDeleting = false;
       notifyListeners();
+    }
+  }
+
+  String _extractApiError(dynamic error) {
+    try {
+      final response = error.response;
+      final data = response?.data;
+
+      if (data is Map<String, dynamic>) {
+        if (data['errors'] is Map) {
+          final errors = data['errors'] as Map;
+          if (errors.isNotEmpty) {
+            final firstValue = errors.values.first;
+            if (firstValue is List && firstValue.isNotEmpty) {
+              return firstValue.first.toString();
+            }
+            return firstValue.toString();
+          }
+        }
+
+        if (data['message'] != null) {
+          return data['message'].toString();
+        }
+      }
+
+      return 'Terjadi kesalahan. Silakan coba lagi.';
+    } catch (_) {
+      return 'Terjadi kesalahan. Silakan coba lagi.';
     }
   }
 
@@ -80,7 +108,7 @@ class ProjectAttachmentProvider extends ChangeNotifier {
         fileName: attachment.fileName,
       );
     } catch (e) {
-      errorMessage = 'Gagal membuka file: $e';
+      errorMessage = _extractApiError(e);
       return null;
     } finally {
       isOpening = false;
