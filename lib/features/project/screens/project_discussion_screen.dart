@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/project_discussion_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'discussion_image_preview_screen.dart';
+import 'dart:io';
 
 class ProjectDiscussionScreen extends StatefulWidget {
   final int projectId;
@@ -22,6 +23,7 @@ class ProjectDiscussionScreen extends StatefulWidget {
 class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  File? _selectedImage;
 
   int _lastMessageCount = 0;
 
@@ -64,7 +66,7 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
     });
   }
 
-  Future<void> _pickAndSendImage() async {
+  Future<void> _pickImage() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png'],
@@ -73,23 +75,9 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
 
     if (result == null || result.files.single.path == null) return;
 
-    final path = result.files.single.path!;
-
-    final ok = await context
-        .read<ProjectDiscussionProvider>()
-        .sendImage(widget.projectId, path);
-
-    if (!mounted) return;
-
-    if (!ok) {
-      final error = context.read<ProjectDiscussionProvider>().errorMessage;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error ?? 'Gagal mengirim gambar')),
-      );
-      return;
-    }
-
-    _scrollToBottom();
+    setState(() {
+      _selectedImage = File(result.files.single.path!);
+    });
   }
 
   String _formatTime(String dateTime) {
@@ -107,13 +95,27 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
 
   Future<void> _send() async {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
+    final image = _selectedImage;
+
+    if (text.isEmpty && image == null) return;
 
     _controller.clear();
 
-    final ok = await context
-        .read<ProjectDiscussionProvider>()
-        .sendMessage(widget.projectId, text);
+    setState(() {
+      _selectedImage = null;
+    });
+
+    bool ok = false;
+
+    if (image != null) {
+      ok = await context
+          .read<ProjectDiscussionProvider>()
+          .sendImageWithText(widget.projectId, image.path, text);
+    } else {
+      ok = await context
+          .read<ProjectDiscussionProvider>()
+          .sendMessage(widget.projectId, text);
+    }
 
     if (!mounted) return;
 
@@ -455,65 +457,119 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
         ],
       ),
       child: SafeArea(
-        top: false,
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              onPressed: provider.isSending ? null : _pickAndSendImage,
-              icon: const Icon(
-                Icons.image_rounded,
-                color: Color(0xFF2563EB),
-              ),
-            ),
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                minLines: 1,
-                maxLines: 4,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => provider.isSending ? null : _send(),
-                decoration: InputDecoration(
-                  hintText: 'Tulis pesan ke admin...',
-                  filled: true,
-                  fillColor: const Color(0xFFF1F5F9),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(22),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            InkWell(
-              onTap: provider.isSending ? null : _send,
-              borderRadius: BorderRadius.circular(999),
-              child: Container(
-                width: 46,
-                height: 46,
+            if (_selectedImage != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: provider.isSending
-                      ? Colors.grey.shade400
-                      : const Color(0xFF2563EB),
-                  shape: BoxShape.circle,
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
                 ),
-                child: provider.isSending
-                    ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(
-                        Icons.send_rounded,
-                        color: Colors.white,
-                        size: 21,
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.file(
+                        _selectedImage!,
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Gambar siap dikirim. Kamu bisa menambahkan pesan sebelum klik kirim.',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          height: 1.35,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: provider.isSending
+                          ? null
+                          : () {
+                              setState(() {
+                                _selectedImage = null;
+                              });
+                            },
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: provider.isSending ? null : _pickImage,
+                  icon: const Icon(
+                    Icons.image_rounded,
+                    color: Color(0xFF2563EB),
+                  ),
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    minLines: 1,
+                    maxLines: 4,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => provider.isSending ? null : _send(),
+                    decoration: InputDecoration(
+                      hintText: _selectedImage == null
+                          ? 'Tulis pesan ke admin...'
+                          : 'Tambahkan caption...',
+                      filled: true,
+                      fillColor: const Color(0xFFF1F5F9),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(22),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                InkWell(
+                  onTap: provider.isSending ? null : _send,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: provider.isSending
+                          ? Colors.grey.shade400
+                          : const Color(0xFF2563EB),
+                      shape: BoxShape.circle,
+                    ),
+                    child: provider.isSending
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.send_rounded,
+                            color: Colors.white,
+                            size: 21,
+                          ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -127,6 +127,52 @@ class ProjectDiscussionProvider extends ChangeNotifier {
     isRealtimeConnected = false;
   }
 
+  Future<bool> sendImageWithText(
+    int projectId,
+    String filePath,
+    String text,
+  ) async {
+    try {
+      isSending = true;
+      errorMessage = null;
+      notifyListeners();
+
+      final fileName = filePath.split('/').last;
+
+      final formData = FormData.fromMap({
+        'message': text,
+        'file': await MultipartFile.fromFile(
+          filePath,
+          filename: fileName,
+        ),
+      });
+
+      final res = await _dio.post(
+        '/projects/$projectId/discussion/messages',
+        data: formData,
+      );
+
+      final data = res.data['data'];
+
+      if (data != null) {
+        final newMessage = DiscussionMessage.fromJson(
+          Map<String, dynamic>.from(data),
+        );
+
+        addMessageIfNotExists(newMessage);
+      }
+
+      return true;
+    } catch (e) {
+      errorMessage = 'Gagal mengirim gambar: $e';
+      debugPrint(errorMessage);
+      return false;
+    } finally {
+      isSending = false;
+      notifyListeners();
+    }
+  }
+
   void addMessageIfNotExists(DiscussionMessage message) {
     if (message.id != 0 && _messageIds.contains(message.id)) {
       return;
