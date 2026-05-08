@@ -10,6 +10,8 @@ class ProjectModel {
   final int? itemsCount;
   final String? createdAt;
   final List<ProjectItemModel> items;
+  final int discussionUnreadCount;
+  final bool hasUnreadDiscussion;
 
   ProjectModel({
     required this.id,
@@ -21,6 +23,8 @@ class ProjectModel {
     this.itemsCount,
     this.createdAt,
     this.items = const [],
+    this.discussionUnreadCount = 0,
+    this.hasUnreadDiscussion = false,
   });
 
   factory ProjectModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +39,12 @@ class ProjectModel {
       status: json['status']?.toString() ?? 'draft',
       itemsCount: json['items_count'],
       createdAt: json['created_at']?.toString(),
+      discussionUnreadCount: int.tryParse(
+            json['discussion_unread_count']?.toString() ?? '0',
+          ) ??
+          0,
+      hasUnreadDiscussion: json['has_unread_discussion'] == true ||
+          json['has_unread_discussion']?.toString() == '1',
       items: json['items'] is List
           ? (json['items'] as List)
               .map((e) => ProjectItemModel.fromJson(e))

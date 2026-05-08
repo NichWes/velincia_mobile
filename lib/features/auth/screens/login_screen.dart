@@ -119,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.3),
+        borderSide: const BorderSide(color: Color(0xFFF97316), width: 1.3),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
@@ -149,8 +149,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Color(0xFF2563EB),
-                      Color(0xFF4F46E5),
+                      Color(0xFF0F172A),
+                      Color(0xFF1E293B),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -174,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(18),
                           ),
                           child: Image.asset(
-                            'assets/images/logo_velincia.png',
+                            'assets/images/logo-velincia.png',
                             fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => const Icon(
                               Icons.storefront_rounded,
@@ -189,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: const [
                               Text(
-                                'Velincia HPL',
+                                'Velincia Build',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
@@ -198,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                'Contractor App',
+                                'Interior Project App',
                                 style: TextStyle(
                                   color: Colors.white70,
                                   fontSize: 13,
@@ -325,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 elevation: 0,
-                                backgroundColor: const Color(0xFF2563EB),
+                                backgroundColor: const Color(0xFFF97316),
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(18),

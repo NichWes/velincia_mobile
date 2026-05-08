@@ -59,7 +59,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _goToCreateProject,
-        backgroundColor: const Color(0xFF2563EB),
+        backgroundColor: const Color(0xFFF97316),
         foregroundColor: Colors.white,
         elevation: 8,
         icon: const Icon(
@@ -125,8 +125,8 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                   ),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(24),
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => MultiProvider(
@@ -149,6 +149,9 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                           ),
                         ),
                       );
+
+                      if (!mounted) return;
+                      await context.read<ProjectProvider>().fetchProjects();
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(18),
@@ -166,10 +169,46 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                                   ),
                                 ),
                               ),
-                              StatusBadge(
-                                text: project.status,
-                                backgroundColor: statusStyle.background,
-                                textColor: statusStyle.foreground,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  StatusBadge(
+                                    text: project.status,
+                                    backgroundColor: statusStyle.background,
+                                    textColor: statusStyle.foreground,
+                                  ),
+                                  if (project.discussionUnreadCount > 0) ...[
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 9, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFEF4444),
+                                        borderRadius:
+                                            BorderRadius.circular(999),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.chat_bubble_rounded,
+                                            size: 12,
+                                            color: Colors.white,
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Text(
+                                            '${project.discussionUnreadCount}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ),
@@ -203,7 +242,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                               Text(
                                 'Lihat Detail',
                                 style: TextStyle(
-                                  color: Colors.blue.shade700,
+                                  color: const Color(0xFFF97316),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),

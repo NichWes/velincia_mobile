@@ -16,10 +16,40 @@ class MyApp extends StatelessWidget {
       create: (_) => AuthProvider(),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Velincia HPL',
+        title: 'Velincia Build',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)),
           useMaterial3: true,
+          scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFFF97316),
+            primary: const Color(0xFFF97316),
+            secondary: const Color(0xFF0F172A),
+            surface: Colors.white,
+          ),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFFF8FAFC),
+            foregroundColor: Color(0xFF0F172A),
+            elevation: 0,
+            centerTitle: false,
+          ),
+          floatingActionButtonTheme: const FloatingActionButtonThemeData(
+            backgroundColor: Color(0xFFF97316),
+            foregroundColor: Colors.white,
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF97316),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
+          ),
         ),
         home: const SplashScreen(),
       ),

@@ -19,8 +19,8 @@ StatusStyle projectStatusStyle(String status) {
       );
     case 'active':
       return const StatusStyle(
-        background: Color(0xFFDBEAFE),
-        foreground: Color(0xFF1D4ED8),
+        background: Color(0xFFFFEDD5),
+        foreground: Color(0xFFC2410C),
       );
     case 'completed':
       return const StatusStyle(

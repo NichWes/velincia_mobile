@@ -270,7 +270,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       borderRadius: BorderRadius.circular(22),
                       border: Border.all(
                         color: isSelected
-                            ? const Color(0xFF2563EB)
+                            ? const Color(0xFFF97316)
                             : Colors.grey.shade200,
                         width: isSelected ? 1.5 : 1,
                       ),
@@ -383,7 +383,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 height: 54,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: const Color(0xFFF97316),
                     foregroundColor: Colors.white,
                     iconColor: Colors.white,
                     shape: RoundedRectangleBorder(
@@ -433,7 +433,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.3),
+        borderSide: const BorderSide(color: Color(0xFFF97316), width: 1.3),
       ),
     );
   }

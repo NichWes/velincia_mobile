@@ -31,8 +31,8 @@ class DashboardScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [
-                            Color(0xFF2563EB),
-                            Color(0xFF4F46E5),
+                            Color(0xFF0F172A),
+                            Color(0xFF1E293B),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -40,7 +40,7 @@ class DashboardScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withOpacity(0.18),
+                            color: const Color(0xFFF97316).withOpacity(0.18),
                             blurRadius: 24,
                             offset: const Offset(0, 10),
                           ),
@@ -129,7 +129,7 @@ class DashboardScreen extends StatelessWidget {
                           icon: Icons.folder_open_rounded,
                           title: 'Project',
                           subtitle: 'Kelola kebutuhan material project',
-                          color: const Color(0xFF2563EB),
+                          color: const Color(0xFFF97316),
                           onTap: () {
                             Navigator.push(
                               context,
@@ -147,7 +147,7 @@ class DashboardScreen extends StatelessWidget {
                           icon: Icons.receipt_long_rounded,
                           title: 'Order',
                           subtitle: 'Pantau pesanan dan status pembayaran',
-                          color: const Color(0xFF7C3AED),
+                          color: const Color(0xFF0F172A),
                           onTap: () {
                             Navigator.push(
                               context,
@@ -183,11 +183,14 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          _infoTile(Icons.email_outlined, 'Email', user.email ?? '-'),
+                          _infoTile(
+                              Icons.email_outlined, 'Email', user.email ?? '-'),
                           const Divider(height: 24),
-                          _infoTile(Icons.business_outlined, 'Perusahaan', user.companyName ?? '-'),
+                          _infoTile(Icons.business_outlined, 'Perusahaan',
+                              user.companyName ?? '-'),
                           const Divider(height: 24),
-                          _infoTile(Icons.location_city_outlined, 'Alamat', user.address ?? '-'),
+                          _infoTile(Icons.location_city_outlined, 'Alamat',
+                              user.address ?? '-'),
                         ],
                       ),
                     ),
@@ -204,15 +207,16 @@ class DashboardScreen extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 18,
-          backgroundColor: const Color(0xFFEFF6FF),
-          child: Icon(icon, color: const Color(0xFF2563EB), size: 18),
+          backgroundColor: const Color(0xFFFFEDD5),
+          child: Icon(icon, color: const Color(0xFFF97316), size: 18),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+              Text(title,
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
               const SizedBox(height: 4),
               Text(
                 value,

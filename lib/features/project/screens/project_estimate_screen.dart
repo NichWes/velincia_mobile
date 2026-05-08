@@ -122,14 +122,17 @@ class _ProjectEstimateScreenState extends State<ProjectEstimateScreen> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                      colors: [
+                        Color(0xFF0F172A),
+                        Color(0xFF1E293B),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF4F46E5).withOpacity(0.22),
+                        color: const Color(0xFFF97316).withOpacity(0.18),
                         blurRadius: 24,
                         offset: const Offset(0, 10),
                       ),

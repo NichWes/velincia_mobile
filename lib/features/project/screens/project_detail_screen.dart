@@ -112,7 +112,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       case 'draft':
         return const Color(0xFFE5E7EB);
       case 'active':
-        return const Color(0xFFDBEAFE);
+        return const Color(0xFFFFEDD5);
       case 'completed':
         return const Color(0xFFDCFCE7);
       default:
@@ -125,7 +125,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       case 'draft':
         return const Color(0xFF374151);
       case 'active':
-        return const Color(0xFF1D4ED8);
+        return const Color(0xFFC2410C);
       case 'completed':
         return const Color(0xFF15803D);
       default:
@@ -141,7 +141,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+            colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
           ),
           borderRadius: BorderRadius.circular(24),
         ),
@@ -177,8 +177,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF4F46E5),
-            Color(0xFF6366F1),
+            Color(0xFF0F172A),
+            Color(0xFF1E293B),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -186,7 +186,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4F46E5).withOpacity(0.22),
+            color: const Color(0xFFF97316).withOpacity(0.18),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -334,7 +334,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _goToAddItem,
-        backgroundColor: const Color(0xFF2563EB),
+        backgroundColor: const Color(0xFFF97316),
         foregroundColor: Colors.white,
         elevation: 8,
         icon: const Icon(
@@ -488,8 +488,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           child: OutlinedButton.icon(
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              side: const BorderSide(color: Color(0xFF2563EB)),
-                              foregroundColor: const Color(0xFF2563EB),
+                              side: const BorderSide(color: Color(0xFFF97316)),
+                              foregroundColor: const Color(0xFFF97316),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -516,7 +516,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           child: ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              backgroundColor: const Color(0xFF2563EB),
+                              backgroundColor: const Color(0xFFF97316),
                               foregroundColor: Colors.white,
                               iconColor: Colors.white,
                               textStyle: const TextStyle(
@@ -536,35 +536,84 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          backgroundColor: const Color(0xFF10B981),
-                          foregroundColor: Colors.white,
-                          iconColor: Colors.white,
-                          textStyle: const TextStyle(
-                            fontWeight: FontWeight.w700,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                backgroundColor: const Color(0xFF10B981),
+                                foregroundColor: Colors.white,
+                                iconColor: Colors.white,
+                                textStyle: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              onPressed: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ChangeNotifierProvider(
+                                      create: (_) =>
+                                          ProjectDiscussionProvider(),
+                                      child: ProjectDiscussionScreen(
+                                        projectId: widget.projectId,
+                                        currentUserId: currentUserId,
+                                      ),
+                                    ),
+                                  ),
+                                );
+
+                                if (!mounted) return;
+
+                                await context
+                                    .read<ProjectProvider>()
+                                    .fetchProjectDetail(widget.projectId);
+                              },
+                              icon: const Icon(Icons.chat_bubble_rounded),
+                              label: Text(
+                                project.discussionUnreadCount > 0
+                                    ? 'Diskusi Project (${project.discussionUnreadCount})'
+                                    : 'Diskusi Project',
+                              ),
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ChangeNotifierProvider(
-                                create: (_) => ProjectDiscussionProvider(),
-                                child: ProjectDiscussionScreen(
-                                  projectId: widget.projectId,
-                                  currentUserId: currentUserId,
+                          if (project.discussionUnreadCount > 0)
+                            Positioned(
+                              top: -8,
+                              right: -8,
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                  minWidth: 24,
+                                  minHeight: 24,
+                                ),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 7),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEF4444),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border:
+                                      Border.all(color: Colors.white, width: 2),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${project.discussionUnreadCount}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          );
-                        },
-                        icon: const Icon(Icons.chat_bubble_rounded),
-                        label: const Text('Diskusi Project'),
+                        ],
                       ),
                     ),
                   ],

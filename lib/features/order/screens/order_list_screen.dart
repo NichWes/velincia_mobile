@@ -156,7 +156,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                               Text(
                                 'Lihat Detail',
                                 style: TextStyle(
-                                  color: Colors.deepPurple.shade700,
+                                  color: const Color(0xFFF97316),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),

@@ -346,7 +346,7 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
             Container(
               padding: EdgeInsets.all(hasImage ? 6 : 12),
               decoration: BoxDecoration(
-                color: isMe ? const Color(0xFF2563EB) : Colors.white,
+                color: isMe ? const Color(0xFF1E293B) : Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
@@ -514,7 +514,7 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
                   onPressed: provider.isSending ? null : _pickImage,
                   icon: const Icon(
                     Icons.image_rounded,
-                    color: Color(0xFF2563EB),
+                    color: Color(0xFF1E293B),
                   ),
                 ),
                 Expanded(
@@ -551,7 +551,7 @@ class _ProjectDiscussionScreenState extends State<ProjectDiscussionScreen> {
                     decoration: BoxDecoration(
                       color: provider.isSending
                           ? Colors.grey.shade400
-                          : const Color(0xFF2563EB),
+                          : const Color(0xFF1E293B),
                       shape: BoxShape.circle,
                     ),
                     child: provider.isSending

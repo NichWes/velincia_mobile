@@ -33,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FC),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -44,12 +44,14 @@ class _SplashScreenState extends State<SplashScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
+                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blue.withOpacity(0.18),
+                    color: const Color(0xFFF97316).withOpacity(0.20),
                     blurRadius: 24,
                     offset: const Offset(0, 10),
                   ),
@@ -67,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 20),
             const Text(
-              'Velincia HPL',
+              'Velincia Build',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
@@ -82,7 +84,9 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const CircularProgressIndicator(),
+            const CircularProgressIndicator(
+              color: Color(0xFFF97316),
+            ),
           ],
         ),
       ),
