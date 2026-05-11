@@ -1,6 +1,7 @@
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../models/order_model.dart';
+import 'package:dio/dio.dart';
 
 class OrderService {
   final ApiClient _apiClient = ApiClient();
@@ -55,23 +56,40 @@ class OrderService {
     final data = response.data;
 
     if (data is Map<String, dynamic>) {
-      return OrderModel.fromJson(data);
+      final orderJson = data['order'] ?? data;
+      if (orderJson is Map<String, dynamic>) {
+        return OrderModel.fromJson(orderJson);
+      }
     }
 
     throw Exception('Format create order tidak valid');
   }
 
   Future<OrderModel> submitOrder(int orderId) async {
-    final response = await _apiClient.dio.post(
-      ApiEndpoints.submitOrder(orderId),
-    );
+    try {
+      final response = await _apiClient.dio.post(
+        ApiEndpoints.submitOrder(orderId),
+      );
 
-    final data = response.data;
+      final data = response.data;
 
-    if (data is Map<String, dynamic> && data['order'] != null) {
-      return OrderModel.fromJson(data['order']);
+      if (data is Map<String, dynamic>) {
+        final orderJson = data['order'] ?? data;
+        if (orderJson is Map<String, dynamic>) {
+          return OrderModel.fromJson(orderJson);
+        }
+      }
+
+      throw Exception('Format submit order tidak valid');
+    } on DioException catch (e) {
+      final data = e.response?.data;
+
+      if (data is Map<String, dynamic>) {
+        final message = data['message'] ?? 'Gagal submit order';
+        throw Exception(message);
+      }
+
+      throw Exception('Gagal submit order: ${e.message}');
     }
-
-    throw Exception('Format submit order tidak valid');
   }
 }

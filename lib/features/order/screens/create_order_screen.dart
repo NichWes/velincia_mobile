@@ -105,19 +105,37 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     if (!mounted) return;
 
     if (order != null) {
+      final submittedOrder = await orderProvider.submitOrder(order.id);
+
+      if (!mounted) return;
+
+      if (submittedOrder == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              orderProvider.submitErrorMessage ??
+                  'Order dibuat, tetapi belum berhasil lanjut ke pembayaran',
+            ),
+          ),
+        );
+      }
+
+      final finalOrder = submittedOrder ?? order;
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => MultiProvider(
             providers: [
               ChangeNotifierProvider(
-                create: (_) => OrderProvider()..fetchOrderDetail(order.id),
+                create: (_) => OrderProvider()..fetchOrderDetail(finalOrder.id),
               ),
               ChangeNotifierProvider(
-                create: (_) => InvoiceProvider()..fetchInvoiceByOrder(order.id),
+                create: (_) =>
+                    InvoiceProvider()..fetchInvoiceByOrder(finalOrder.id),
               ),
             ],
-            child: OrderDetailScreen(orderId: order.id),
+            child: OrderDetailScreen(orderId: finalOrder.id),
           ),
         ),
       );
@@ -154,7 +172,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FC),
       appBar: AppBar(
-        title: const Text('Buat Order'),
+        title: const Text('Buat Order & Bayar'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -164,6 +182,33 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF7ED),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                      color: const Color(0xFFF97316).withOpacity(0.35)),
+                ),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline_rounded, color: Color(0xFFF97316)),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Review Mode Midtrans: aplikasi ini menggunakan data uji coba dan pembayaran sandbox. Transaksi tidak diproses sebagai pembayaran asli.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF9A3412),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -403,7 +448,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           ),
                         )
                       : const Text(
-                          'Buat Order',
+                          'Lanjut ke Pembayaran',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 15,

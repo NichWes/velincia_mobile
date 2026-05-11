@@ -325,43 +325,52 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   Widget _buildTimeline(String status) {
     final steps = [
       'draft',
-      'waiting_admin',
       'waiting_payment',
       'paid',
       'processing',
+      'completed',
     ];
 
-    List<String> finalSteps;
-    if (status == 'completed') {
-      finalSteps = [...steps, 'completed'];
-    } else if (status == 'cancelled') {
-      finalSteps = [...steps, 'cancelled'];
-    } else if (status == 'shipped') {
-      finalSteps = [...steps, 'shipped'];
-    } else if (status == 'ready_pickup') {
-      finalSteps = [...steps, 'ready_pickup'];
-    } else {
-      finalSteps = steps;
+    int currentIndex = steps.indexOf(status);
+
+    if (status == 'shipped' || status == 'ready_pickup') {
+      currentIndex = steps.indexOf('processing');
     }
 
-    int currentIndex = finalSteps.indexOf(status);
-    if (currentIndex == -1) {
-      currentIndex = steps.indexOf(status);
+    if (status == 'cancelled') {
+      currentIndex = steps.length - 1;
     }
 
     return Column(
-      children: finalSteps.asMap().entries.map((entry) {
+      children: steps.asMap().entries.map((entry) {
         final index = entry.key;
         final step = entry.value;
         final isActive = index <= currentIndex && currentIndex != -1;
 
         return _timelineStep(
-          label: step.replaceAll('_', ' ').toUpperCase(),
+          label: _reviewStepLabel(step),
           isActive: isActive,
-          isLast: index == finalSteps.length - 1,
+          isLast: index == steps.length - 1,
         );
       }).toList(),
     );
+  }
+
+  String _reviewStepLabel(String status) {
+    switch (status) {
+      case 'draft':
+        return 'ORDER DIBUAT';
+      case 'waiting_payment':
+        return 'MENUNGGU PEMBAYARAN';
+      case 'paid':
+        return 'PEMBAYARAN BERHASIL';
+      case 'processing':
+        return 'ORDER DIPROSES';
+      case 'completed':
+        return 'SELESAI';
+      default:
+        return status.replaceAll('_', ' ').toUpperCase();
+    }
   }
 
   Widget _infoTile(String label, String value) {
@@ -587,6 +596,34 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   padding: const EdgeInsets.all(16),
                   children: [
                     Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                            color: const Color(0xFF2563EB).withOpacity(0.25)),
+                      ),
+                      child: const Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.verified_user_outlined,
+                              color: Color(0xFF2563EB)),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Mode review pembayaran: silakan klik Bayar Sekarang untuk membuka halaman pembayaran Midtrans Sandbox.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1E3A8A),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -752,7 +789,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Submit Order'),
+                              : const Text('Lanjutkan ke Pembayaran'),
                         ),
                       ),
                     if (order.status == 'draft') const SizedBox(height: 16),

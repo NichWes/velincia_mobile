@@ -88,6 +88,7 @@ class OrderProvider extends ChangeNotifier {
       return order;
     } catch (e) {
       submitErrorMessage = 'Gagal submit order: $e';
+      debugPrint('SUBMIT ORDER ERROR: $e');
       return null;
     } finally {
       isSubmitting = false;
